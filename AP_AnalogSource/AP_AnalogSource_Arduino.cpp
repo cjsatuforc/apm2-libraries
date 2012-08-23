@@ -16,8 +16,8 @@ static uint8_t num_pins_watched;
 static uint8_t next_pin_index;
 static uint8_t next_pin_count;
 static volatile struct {
-    uint8_t  pin;
-    uint8_t  sum_count;
+    uint8_t pin;
+    uint8_t sum_count;
     uint16_t output;
     uint16_t sum;
 } pins[MAX_PIN_SOURCES];
@@ -27,7 +27,7 @@ static volatile struct {
 // each conversion takes about 125 microseconds
 static void adc_timer(uint32_t t)
 {
-	if (bit_is_set(ADCSRA, ADSC) || num_pins_watched == 0) {
+    if (bit_is_set(ADCSRA, ADSC) || num_pins_watched == 0) {
         // conversion is still running. This should be
         // very rare, as we are called at 1kHz
         return;
@@ -69,7 +69,7 @@ static void adc_timer(uint32_t t)
         ADMUX = _BV(REFS0) | (pin & 0x07);
     }
 
-	// start the next conversion
+    // start the next conversion
     ADCSRA |= _BV(ADSC);
 }
 
@@ -104,7 +104,7 @@ uint16_t AP_AnalogSource_Arduino::read_vcc(void)
 // time read_average() was called. This gives a very cheap
 // filtered value, as new values are produced at 500/N Hz
 // where N is the total number of analog sources
-uint16_t AP_AnalogSource_Arduino::read_average(void)
+float AP_AnalogSource_Arduino::read_average(void)
 {
     uint16_t sum;
     uint8_t sum_count;
@@ -119,7 +119,7 @@ uint16_t AP_AnalogSource_Arduino::read_average(void)
     pins[_pin_index].sum = 0;
     pins[_pin_index].sum_count = 0;
     sei();
-    return sum / sum_count;
+    return sum / (float)sum_count;
 }
 
 // read with the prescaler. This uses the averaged value since
@@ -160,7 +160,7 @@ void AP_AnalogSource_Arduino::assign_pin_index(uint8_t pin)
     num_pins_watched++;
     if (num_pins_watched == 1) {
         // enable the ADC
-		PRR0 &= ~_BV(PRADC);
-		ADCSRA |= _BV(ADEN);
+        PRR0 &= ~_BV(PRADC);
+        ADCSRA |= _BV(ADEN);
     }
 }
