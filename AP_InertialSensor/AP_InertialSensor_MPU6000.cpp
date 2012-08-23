@@ -273,6 +273,22 @@ void AP_InertialSensor_MPU6000::read(uint32_t )
     }
 
     digitalWrite(_cs_pin, HIGH);
+
+    /*Serial.print(_cs_pin);
+    Serial.print(", ");
+    Serial.print(_count);
+    Serial.print(", ");
+    Serial.print(_sum[0]);
+    Serial.print(",");
+    Serial.print(_sum[1]);
+    Serial.print(",");
+    Serial.print(_sum[2]);
+    Serial.print(", ");
+    Serial.print(_sum[4]);
+    Serial.print(",");
+    Serial.print(_sum[5]);
+    Serial.print(",");
+    Serial.println(_sum[6]);*/
 }
 
 uint8_t AP_InertialSensor_MPU6000::register_read( uint8_t reg )
@@ -334,7 +350,7 @@ void AP_InertialSensor_MPU6000::hardware_init()
 	
 	_product_id = register_read(MPUREG_PRODUCT_ID); // read the product ID rev c has 1/2 the sensitivity of rev d
 	
-	//Serial.printf("Product_ID= 0x%x\n", (unsigned) _product_id);
+	Serial.printf("Product_ID= 0x%x\n", (unsigned) _product_id);
 	
 	if ((_product_id == MPU6000ES_REV_C4) || (_product_id == MPU6000ES_REV_C5) ||
 		(_product_id == MPU6000_REV_C4)   || (_product_id == MPU6000_REV_C5)){
@@ -362,7 +378,9 @@ void AP_InertialSensor_MPU6000::hardware_init()
 float AP_InertialSensor_MPU6000::_temp_to_celsius ( uint16_t regval )
 {
     /* TODO */
-    return 20.0;
+    // return 20.0;
+    uint16_t tc = (regval ^ 0xFFFF) + 1;
+    return tc * 0.02;
 }
 
 // return the MPU6k gyro drift rate in radian/s/s
