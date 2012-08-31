@@ -168,7 +168,9 @@ uint8_t AP_InertialSensor_MPU6000::_cs_pin;
  *  RS-MPU-6000A-00.pdf, page 33, section 4.25 lists LSB sensitivity of
  *  gyro as 16.4 LSB/DPS at scale factor of +/- 2000dps (FS_SEL==3)
  */
-const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532 / 16.4);
+// CLO: modified to run at +/- 500dps (FS_SEL==1) resulting in 65.6 LSB/DPS
+// const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532 / 16.4);
+const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532 / 65.5);
 
 /*
  *  RS-MPU-6000A-00.pdf, page 31, section 4.23 lists LSB sensitivity of
@@ -177,7 +179,9 @@ const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532 / 16.4);
  *  See note below about accel scaling of engineering sample MPU6k
  *  variants however
  */
-const float AP_InertialSensor_MPU6000::_accel_scale = 9.81 / 4096.0;
+// CLO: modified to run at +/- 4g (8192 lSB/g)
+// const float AP_InertialSensor_MPU6000::_accel_scale = 9.81 / 4096.0;
+const float AP_InertialSensor_MPU6000::_accel_scale = 9.81 / 8192.0;
 
 /* pch: I believe the accel and gyro indicies are correct
  *      but somone else should please confirm.
@@ -256,6 +260,8 @@ bool AP_InertialSensor_MPU6000::update( void )
     sei();
 
     count_scale = 1.0 / count;
+
+    // Serial.printf("averaging %d reads\n", count);
 
     _gyro.x = _gyro_scale * _gyro_data_sign[0] * sum[_gyro_data_index[0]] * count_scale;
     _gyro.y = _gyro_scale * _gyro_data_sign[1] * sum[_gyro_data_index[1]] * count_scale;
@@ -438,7 +444,9 @@ void AP_InertialSensor_MPU6000::hardware_init()
     // FS & DLPF   FS=2000º/s, DLPF = 98Hz (low pass filter)
     register_write(MPUREG_CONFIG, BITS_DLPF_CFG_98HZ);
     delay(1);
-    register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
+    // CLO: Modify to run at 500DPS gyro saturation (4x precision)
+    //register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_2000DPS);  // Gyro scale 2000º/s
+    register_write(MPUREG_GYRO_CONFIG, BITS_GYRO_FS_500DPS);  // Gyro scale 500º/s
     delay(1);
 
     _product_id = register_read(MPUREG_PRODUCT_ID);     // read the product ID rev c has 1/2 the sensitivity of rev d
@@ -448,10 +456,14 @@ void AP_InertialSensor_MPU6000::hardware_init()
         (_product_id == MPU6000_REV_C4)   || (_product_id == MPU6000_REV_C5)) {
         // Accel scale 8g (4096 LSB/g)
         // Rev C has different scaling than rev D
-        register_write(MPUREG_ACCEL_CONFIG,1<<3);
+        // CLO: Modify for +/-4g (8192 LSB/g)
+        //register_write(MPUREG_ACCEL_CONFIG,1<<3);
+        register_write(MPUREG_ACCEL_CONFIG,0<<3);
     } else {
         // Accel scale 8g (4096 LSB/g)
-        register_write(MPUREG_ACCEL_CONFIG,2<<3);
+        // CLO: Modify for +/-4g (8192 LSB/g)
+        // register_write(MPUREG_ACCEL_CONFIG,2<<3);
+        register_write(MPUREG_ACCEL_CONFIG,1<<3);
     }
     delay(1);
 
