@@ -75,14 +75,9 @@ public:
     int32_t pitch_sensor;
     int32_t yaw_sensor;
 
-    float get_pitch_rate_earth(void) {
-	    Vector3f omega = get_gyro();
-	    return cos(roll) * omega.y - sin(roll) * omega.z;
-    }
-    float get_roll_rate_earth(void)  {
-	    Vector3f omega = get_gyro();
-	    return omega.x + tan(pitch)*(omega.y*sin(roll) + omega.z*cos(roll));
-    }
+    // roll and pitch rates in earth frame, in radians/s
+    float get_pitch_rate_earth(void);
+    float get_roll_rate_earth(void);
 
     // return a smoothed and corrected gyro vector
     virtual Vector3f get_gyro(void) = 0;
@@ -129,6 +124,10 @@ public:
         return Vector3f(0,0,0);
     }
 
+    // return an airspeed estimate if available. return true
+    // if we have an estimate
+    bool airspeed_estimate(float *airspeed_ret);
+
     // return true if yaw has been initialised
     bool yaw_initialised(void) {
         return _have_initial_yaw;
@@ -144,6 +143,7 @@ public:
     AP_Float _kp;
     AP_Float gps_gain;
     AP_Int8 _gps_use;
+    AP_Int8 _wind_max;
 
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];

@@ -43,6 +43,18 @@ const AP_Param::GroupInfo APM_OBC::var_info[] PROGMEM = {
     // @User: Advanced
     AP_GROUPINFO("TERMINATE",   5, APM_OBC, _terminate, 0),
 
+    // @Param: TERM_ACTION
+    // @DisplayName: Terminate action
+    // @Description: This can be used to force an action on flight termination. Normally this is handled by an external failsafe board, but you can setup APM to handle it here. If set to 0 (which is the default) then no extra action is taken. If set to the magic value 42 then the plane will deliberately crash itself by setting maximum throws on all surfaces, and zero throttle
+    // @User: Advanced
+    AP_GROUPINFO("TERM_ACTION", 6, APM_OBC, _terminate_action, 0),
+
+    // @Param: TERM_PIN
+    // @DisplayName: Terminate Pin
+    // @Description: This sets a digital output pin to set high on flight termination
+    // @User: Advanced
+    AP_GROUPINFO("TERM_PIN",    7, APM_OBC, _terminate_pin,    -1),
+
     AP_GROUPEND
 };
 
@@ -74,6 +86,10 @@ APM_OBC::check(APM_OBC::control_mode mode,
 	// mode. This tells it to pass through controls from the
 	// receiver
 	if (_manual_pin != -1) {
+		if (_manual_pin != _last_manual_pin) {
+			pinMode(_manual_pin, OUTPUT);
+			_last_manual_pin = _manual_pin;
+		}
 		digitalWrite(_manual_pin, mode==OBC_MANUAL);
 	}
 
@@ -126,7 +142,10 @@ APM_OBC::check(APM_OBC::control_mode mode,
 		} else if (gcs_link_ok) {
 			_state = STATE_AUTO;
 			gcs_send_text_fmt(PSTR("GCS OK"));
-			change_command(_saved_wp);			
+			if (_saved_wp != 0) {
+				change_command(_saved_wp);			
+				_saved_wp = 0;
+			}
 		}
 		break;
 
@@ -139,14 +158,31 @@ APM_OBC::check(APM_OBC::control_mode mode,
 		} else if (gps_lock_ok) {
 			gcs_send_text_fmt(PSTR("GPS OK"));
 			_state = STATE_AUTO;
-			change_command(_saved_wp);			
+			if (_saved_wp != 0) {
+				change_command(_saved_wp);			
+				_saved_wp = 0;
+			}
 		}
 		break;
 	}
 
-	// if we are not terminating then toggle the heartbeat pin at 10Hz
-	if (!_terminate && _heartbeat_pin != -1) {
+	// if we are not terminating or if there is a separate terminate
+	// pin configured then toggle the heartbeat pin at 10Hz
+	if (_heartbeat_pin != -1 && (_terminate_pin != -1 || !_terminate)) {
+		if (_heartbeat_pin != _last_heartbeat_pin) {
+			pinMode(_heartbeat_pin, OUTPUT);
+			_last_heartbeat_pin = _heartbeat_pin;
+		}
 		_heartbeat_pin_value = !_heartbeat_pin_value;
 		digitalWrite(_heartbeat_pin, _heartbeat_pin_value);
+	}	
+
+	// set the terminate pin
+	if (_terminate_pin != -1) {
+		if (_terminate_pin != _last_terminate_pin) {
+			pinMode(_terminate_pin, OUTPUT);
+			_last_terminate_pin = _terminate_pin;
+		}
+		digitalWrite(_terminate_pin, _terminate?HIGH:LOW);
 	}	
 }

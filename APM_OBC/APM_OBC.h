@@ -34,12 +34,8 @@ public:
 	// Constructor
 	APM_OBC(void)
 	{
-		if (_heartbeat_pin != -1) {
-			pinMode(_heartbeat_pin, OUTPUT);
-		}
-		if (_manual_pin != -1) {
-			pinMode(_manual_pin,    OUTPUT);
-		}
+		_last_heartbeat_pin = -1;
+		_last_manual_pin = -1;
 		_state = STATE_PREFLIGHT;
 		_terminate.set(0);
 
@@ -47,11 +43,18 @@ public:
 		// auto mission when a failsafe condition is resolved
 		enum ap_var_type var_type;
 		_command_index = (AP_Int8 *)AP_Param::find("CMD_INDEX", &var_type);
+		_saved_wp = 0;
 	}
 
 	void check(enum control_mode control_mode,
 		   uint32_t last_heartbeat_ms,
 		   uint32_t last_gps_fix_ms);
+
+	// should we crash the plane? Only possible with
+	// FS_TERM_ACTTION set to 43
+	bool crash_plane(void) {
+		return _terminate && _terminate_action == 42;
+	}
 
 	// for holding parameters
 	static const struct AP_Param::GroupInfo var_info[];
@@ -62,7 +65,14 @@ private:
 	// digital output pins for communicating with the failsafe board
 	AP_Int8 _heartbeat_pin;
 	AP_Int8 _manual_pin;
+	AP_Int8 _terminate_pin;
 	AP_Int8 _terminate;
+	AP_Int8 _terminate_action;
+
+	// last pins to cope with changing at runtime
+	int8_t _last_heartbeat_pin;
+	int8_t _last_manual_pin;
+	int8_t _last_terminate_pin;
 
 	// waypoint numbers to jump to on failsafe conditions
 	AP_Int8 _wp_comms_hold;

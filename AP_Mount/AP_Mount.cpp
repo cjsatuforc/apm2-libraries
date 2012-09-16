@@ -5,6 +5,24 @@
 #include <AP_Param.h>
 #include <AP_Mount.h>
 
+// Just so that it's completely clear...
+#define ENABLED                 1
+#define DISABLED                0
+
+#if defined( __AVR_ATmega1280__ )
+ # define MNT_JSTICK_SPD_OPTION DISABLED // Allow RC joystick to control the speed of the mount movements instead of the position of the mount
+ # define MNT_RETRACT_OPTION    DISABLED // Use a servo to retract the mount inside the fuselage (i.e. for landings)
+ # define MNT_GPSPOINT_OPTION    ENABLED // Point the mount to a GPS point defined via a mouse click in the Mission Planner GUI
+ # define MNT_STABILIZE_OPTION  DISABLED // stabilize camera using frame attitude information
+ # define MNT_MOUNT2_OPTION     DISABLED // second mount, can for example be used to keep an antenna pointed at the home position
+#else
+ # define MNT_JSTICK_SPD_OPTION ENABLED // uses  844 bytes of memory
+ # define MNT_RETRACT_OPTION    ENABLED // uses  244 bytes of memory
+ # define MNT_GPSPOINT_OPTION   ENABLED // uses  580 bytes of memory
+ # define MNT_STABILIZE_OPTION  ENABLED // uses 2424 bytes of memory
+ # define MNT_MOUNT2_OPTION     ENABLED // uses   58 bytes of memory (must also be enabled in APM_Config.h)
+#endif
+
 const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Param: MODE
     // @DisplayName: Mount operation mode
@@ -13,6 +31,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("MODE",       0, AP_Mount, _mount_mode, MAV_MOUNT_MODE_RETRACT), // see MAV_MOUNT_MODE at ardupilotmega.h
 
+#if MNT_RETRACT_OPTION == ENABLED
     // @Param: RETRACT
     // @DisplayName: Mount retract angles
     // @Description: Mount angles when in retract operation mode
@@ -21,6 +40,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("RETRACT",    1, AP_Mount, _retract_angles, 0),
+#endif
 
     // @Param: NEUTRAL
     // @DisplayName: Mount neutral angles
@@ -40,6 +60,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("CONTROL",    3, AP_Mount, _control_angles, 0),
 
+#if MNT_STABILIZE_OPTION == ENABLED
     // @Param: STAB_ROLL
     // @DisplayName: Stabilize mount roll
     // @Description:enable roll stabilisation relative to Earth
@@ -60,6 +81,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("STAB_PAN",   6, AP_Mount, _stab_pan,  0),
+#endif
 
     // @Param: RC_IN_ROLL
     // @DisplayName: roll RC input channel
@@ -136,6 +158,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("ANGMAX_PAN",  15, AP_Mount, _pan_angle_max,  4500),
 
+#if MNT_JSTICK_SPD_OPTION == ENABLED
     // @Param: JSTICK_SPD
     // @DisplayName: mount joystick speed
     // @Description: 0 for position control, small for low speeds, 10 for max speed
@@ -143,11 +166,11 @@ const AP_Param::GroupInfo AP_Mount::var_info[] PROGMEM = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("JSTICK_SPD",  16, AP_Mount, _joystick_speed, 0),
+#endif
 
     AP_GROUPEND
 };
 
-extern RC_Channel_aux* g_rc_function[RC_Channel_aux::k_nr_aux_servo_functions]; // the aux. servo ch. assigned to each function
 extern RC_Channel* rc_ch[NUM_CHANNELS];
 
 AP_Mount::AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs, uint8_t id) :
@@ -164,33 +187,41 @@ AP_Mount::AP_Mount(const struct Location *current_loc, GPS *&gps, AP_AHRS *ahrs,
     // default unknown mount type
     _mount_type = k_unknown;
 
+#if MNT_MOUNT2_OPTION == ENABLED
     if (id == 0) {
+#endif
         _roll_idx = RC_Channel_aux::k_mount_roll;
         _tilt_idx = RC_Channel_aux::k_mount_tilt;
         _pan_idx  = RC_Channel_aux::k_mount_pan;
         _open_idx = RC_Channel_aux::k_mount_open;
+#if MNT_MOUNT2_OPTION == ENABLED
     } else {
         _roll_idx = RC_Channel_aux::k_mount2_roll;
         _tilt_idx = RC_Channel_aux::k_mount2_tilt;
         _pan_idx  = RC_Channel_aux::k_mount2_pan;
         _open_idx = RC_Channel_aux::k_mount2_open;
     }
+#endif
 }
 
 /// Auto-detect the mount gimbal type depending on the functions assigned to the servos
 void
 AP_Mount::update_mount_type()
 {
-    if ((g_rc_function[_roll_idx] == NULL) && (g_rc_function[_tilt_idx] != NULL) && (g_rc_function[_pan_idx] != NULL))
-    {
+	bool have_roll, have_tilt, have_pan;
+	have_roll = RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount_roll) ||
+		RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount2_roll);
+	have_tilt = RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount_tilt) ||
+		RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount2_tilt);
+	have_pan = RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount_pan) ||
+		RC_Channel_aux::function_assigned(RC_Channel_aux::k_mount2_pan);
+    if (have_pan && have_tilt && !have_roll) {
         _mount_type = k_pan_tilt;
     }
-    if ((g_rc_function[_roll_idx] != NULL) && (g_rc_function[_tilt_idx] != NULL) && (g_rc_function[_pan_idx] == NULL))
-    {
+    if (!have_pan && have_tilt && have_roll) {
         _mount_type = k_tilt_roll;
     }
-    if ((g_rc_function[_roll_idx] != NULL) && (g_rc_function[_tilt_idx] != NULL) && (g_rc_function[_pan_idx] != NULL))
-    {
+    if (have_pan && have_tilt && have_roll) {
         _mount_type = k_pan_tilt_roll;
     }
 }
@@ -226,6 +257,7 @@ void AP_Mount::update_mount_position()
 
     switch((enum MAV_MOUNT_MODE)_mount_mode.get())
     {
+#if MNT_RETRACT_OPTION == ENABLED
     // move mount to a "retracted position" or to a position where a fourth servo can retract the entire mount into the fuselage
     case MAV_MOUNT_MODE_RETRACT:
     {
@@ -235,6 +267,7 @@ void AP_Mount::update_mount_position()
         _pan_angle   = vec.z;
         break;
     }
+#endif
 
     // move mount to a neutral position, typically pointing forward
     case MAV_MOUNT_MODE_NEUTRAL:
@@ -260,6 +293,7 @@ void AP_Mount::update_mount_position()
     // RC radio manual angle control, but with stabilization from the AHRS
     case MAV_MOUNT_MODE_RC_TARGETING:
     {
+#if MNT_JSTICK_SPD_OPTION == ENABLED
         if (_joystick_speed) {                  // for spring loaded joysticks
             // allow pilot speed position input to come directly from an RC_Channel
             if (_roll_rc_in && (rc_ch[_roll_rc_in-1])) {
@@ -281,6 +315,7 @@ void AP_Mount::update_mount_position()
                 if (_pan_control_angle > radians(_pan_angle_max*0.01)) _pan_control_angle = radians(_pan_angle_max*0.01);
             }
         } else {
+#endif
             // allow pilot position input to come directly from an RC_Channel
             if (_roll_rc_in && (rc_ch[_roll_rc_in-1])) {
                 _roll_control_angle = angle_input_rad(rc_ch[_roll_rc_in-1], _roll_angle_min, _roll_angle_max);
@@ -291,11 +326,14 @@ void AP_Mount::update_mount_position()
             if (_pan_rc_in && (rc_ch[_pan_rc_in-1])) {
                 _pan_control_angle = angle_input_rad(rc_ch[_pan_rc_in-1], _pan_angle_min, _pan_angle_max);
             }
+#if MNT_JSTICK_SPD_OPTION == ENABLED
         }
+#endif
         stabilize();
         break;
     }
 
+#if MNT_GPSPOINT_OPTION == ENABLED
     // point mount to a GPS point given by the mission planner
     case MAV_MOUNT_MODE_GPS_POINT:
     {
@@ -305,24 +343,26 @@ void AP_Mount::update_mount_position()
         }
         break;
     }
+#endif
+
     default:
         //do nothing
         break;
     }
 
+#if MNT_RETRACT_OPTION == ENABLED
     // move mount to a "retracted position" into the fuselage with a fourth servo
-    if (g_rc_function[_open_idx]) {
-        bool mount_open_new = (enum MAV_MOUNT_MODE)_mount_mode.get()==MAV_MOUNT_MODE_RETRACT ? 0 : 1;
-        if (mount_open != mount_open_new) {
-            mount_open = mount_open_new;
-            move_servo(g_rc_function[_open_idx], mount_open_new, 0, 1);
-        }
+	bool mount_open_new = (enum MAV_MOUNT_MODE)_mount_mode.get()==MAV_MOUNT_MODE_RETRACT ? 0 : 1;
+	if (mount_open != mount_open_new) {
+		mount_open = mount_open_new;
+		move_servo(_open_idx, mount_open_new, 0, 1);
     }
+#endif
 
     // write the results to the servos
-    move_servo(g_rc_function[_roll_idx], _roll_angle*10, _roll_angle_min*0.1, _roll_angle_max*0.1);
-    move_servo(g_rc_function[_tilt_idx], _tilt_angle*10, _tilt_angle_min*0.1, _tilt_angle_max*0.1);
-    move_servo(g_rc_function[_pan_idx ],  _pan_angle*10,  _pan_angle_min*0.1,  _pan_angle_max*0.1);
+    move_servo(_roll_idx, _roll_angle*10, _roll_angle_min*0.1, _roll_angle_max*0.1);
+    move_servo(_tilt_idx, _tilt_angle*10, _tilt_angle_min*0.1, _tilt_angle_max*0.1);
+    move_servo(_pan_idx,  _pan_angle*10,  _pan_angle_min*0.1,  _pan_angle_max*0.1);
 }
 
 void AP_Mount::set_mode(enum MAV_MOUNT_MODE mode)
@@ -359,6 +399,7 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
 
     switch ((enum MAV_MOUNT_MODE)_mount_mode.get())
     {
+#if MNT_RETRACT_OPTION == ENABLED
     case MAV_MOUNT_MODE_RETRACT:      // Load and keep safe position (Roll,Pitch,Yaw) from EEPROM and stop stabilization
         set_retract_angles(packet.input_b*0.01, packet.input_a*0.01, packet.input_c*0.01);
         if (packet.save_position)
@@ -366,6 +407,7 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
             _retract_angles.save();
         }
         break;
+#endif
 
     case MAV_MOUNT_MODE_NEUTRAL:      //  Load and keep neutral position (Roll,Pitch,Yaw) from EEPROM
         set_neutral_angles(packet.input_b*0.01, packet.input_a*0.01, packet.input_c*0.01);
@@ -388,6 +430,7 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
     }
     break;
 
+#if MNT_GPSPOINT_OPTION == ENABLED
     case MAV_MOUNT_MODE_GPS_POINT:      // Load neutral position and start to point to Lat,Lon,Alt
         Location targetGPSLocation;
         targetGPSLocation.lat = packet.input_a;
@@ -395,6 +438,7 @@ void AP_Mount::control_msg(mavlink_message_t *msg)
         targetGPSLocation.alt = packet.input_c;
         set_GPS_target_location(targetGPSLocation);
         break;
+#endif
 
     case MAV_MOUNT_MODE_ENUM_END:
         break;
@@ -422,15 +466,17 @@ void AP_Mount::status_msg(mavlink_message_t *msg)
     case MAV_MOUNT_MODE_NEUTRAL:                        // neutral position (Roll,Pitch,Yaw) from EEPROM
     case MAV_MOUNT_MODE_MAVLINK_TARGETING:      // neutral position and start MAVLink Roll,Pitch,Yaw control with stabilization
     case MAV_MOUNT_MODE_RC_TARGETING:                   // neutral position and start RC Roll,Pitch,Yaw control with stabilization
-        packet.pointing_b = _roll_angle*100;            ///< degrees*100
-        packet.pointing_a = _tilt_angle*100;            ///< degrees*100
-        packet.pointing_c = _pan_angle*100;                     ///< degrees*100
+        packet.pointing_b = _roll_angle*100;            // degrees*100
+        packet.pointing_a = _tilt_angle*100;            // degrees*100
+        packet.pointing_c = _pan_angle*100;             // degrees*100
         break;
+#if MNT_GPSPOINT_OPTION == ENABLED
     case MAV_MOUNT_MODE_GPS_POINT:             // neutral position and start to point to Lat,Lon,Alt
-        packet.pointing_a = _target_GPS_location.lat;           ///< latitude
-        packet.pointing_b = _target_GPS_location.lng;           ///< longitude
-        packet.pointing_c = _target_GPS_location.alt;           ///< altitude
+        packet.pointing_a = _target_GPS_location.lat;   // latitude
+        packet.pointing_b = _target_GPS_location.lng;   // longitude
+        packet.pointing_c = _target_GPS_location.alt;   // altitude
         break;
+#endif
     case MAV_MOUNT_MODE_ENUM_END:
         break;
     }
@@ -444,11 +490,13 @@ void AP_Mount::status_msg(mavlink_message_t *msg)
 /// Set mount point/region of interest, triggered by mission script commands
 void AP_Mount::set_roi_cmd(struct Location *target_loc)
 {
+#if MNT_GPSPOINT_OPTION == ENABLED
     // set the target gps location
     _target_GPS_location = *target_loc;
 
     // set the mode to GPS tracking mode
     set_mode(MAV_MOUNT_MODE_GPS_POINT);
+#endif
 }
 
 /// Set mount configuration, triggered by mission script commands
@@ -501,6 +549,7 @@ AP_Mount::calc_GPS_target_angle(struct Location *target)
 void
 AP_Mount::stabilize()
 {
+#if MNT_STABILIZE_OPTION == ENABLED
     if (_ahrs) {
         // only do the full 3D frame transform if we are doing pan control
         if (_stab_pan) {
@@ -529,10 +578,13 @@ AP_Mount::stabilize()
             }
         }
     } else {
+#endif
         _roll_angle  = degrees(_roll_control_angle);
         _tilt_angle  = degrees(_tilt_control_angle);
         _pan_angle   = degrees(_pan_control_angle);
+#if MNT_STABILIZE_OPTION == ENABLED
     }
+#endif
 }
 /*
  *  /// For testing and development. Called in the medium loop.
@@ -599,15 +651,9 @@ AP_Mount::closest_limit(int16_t angle, int16_t* angle_min, int16_t* angle_max)
 
 /// all angles are degrees * 10 units
 void
-AP_Mount::move_servo(RC_Channel* rc, int16_t angle, int16_t angle_min, int16_t angle_max)
+AP_Mount::move_servo(uint8_t function_idx, int16_t angle, int16_t angle_min, int16_t angle_max)
 {
-    if (rc) {
-        // saturate to the closest angle limit if outside of [min max] angle interval
-        rc->servo_out  = closest_limit(angle, &angle_min, &angle_max);
-        // This is done every time because the user might change the min, max values on the fly
-        rc->set_range(angle_min, angle_max);
-        // convert angle to PWM using a linear transformation (ignores trimming because the servo limits might not be symmetric)
-        rc->calc_pwm();
-        rc->output();
-    }
+	// saturate to the closest angle limit if outside of [min max] angle interval
+	int16_t servo_out = closest_limit(angle, &angle_min, &angle_max);
+	RC_Channel_aux::move_servo((RC_Channel_aux::Aux_servo_function_t)function_idx, servo_out, angle_min, angle_max);
 }
