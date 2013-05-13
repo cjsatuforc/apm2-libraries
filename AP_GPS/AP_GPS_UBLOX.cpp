@@ -236,6 +236,11 @@ AP_GPS_UBLOX::_parse_gps(void)
         }
         num_sats        = _buffer.solution.satellites;
         hdop            = _buffer.solution.position_DOP;
+
+		// this allows us to compute the unix time upstream even though date
+		// is in a different format than for the MTK16 gps.
+		date            = _buffer.solution.week;
+
         break;
     case MSG_VELNED:
         Debug("MSG_VELNED");
