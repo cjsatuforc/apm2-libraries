@@ -20,7 +20,8 @@ public:
 
     enum Start_style {
         COLD_START = 0,
-        WARM_START
+        WARM_START = 1,
+		NOCAL_START = 2
     };
 
     /// Perform startup initialisation.
@@ -34,6 +35,10 @@ public:
     /// orientation or motion of the airframe.  Calibration should be
     /// as for the previous COLD_START call.
     ///
+	/// For NOCAL_START, the calibration values are zeroed and raw sensor
+	/// values are returned.  This is useful if the sensor host wishes to
+	/// handle sensor calibration duties
+	///
     /// @param style	The initialisation startup style.
     ///
     virtual void        init( Start_style           style,

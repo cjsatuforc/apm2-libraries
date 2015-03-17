@@ -31,14 +31,22 @@ AP_IMU_INS::init( Start_style           style,
     // if we are warm-starting, load the calibration data from EEPROM and go
     //
     if (WARM_START == style) {
+        // load previously computed calibration values
         _sensor_cal.load();
-    } else {
-
+    } else if (COLD_START == style) {
         // do cold-start calibration for both accel and gyro
         _init_gyro(delay_cb, flash_leds_cb);
 
         // save calibration
         _sensor_cal.save();
+    } else if (NOCAL_START == style) {
+        // zero the calibration values
+        _sensor_cal[0] = 0;
+        _sensor_cal[1] = 0;
+        _sensor_cal[2] = 0;
+        _sensor_cal[3] = 0;
+        _sensor_cal[4] = 0;
+        _sensor_cal[5] = 0;
     }
 }
 
