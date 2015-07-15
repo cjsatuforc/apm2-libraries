@@ -93,10 +93,18 @@ public:
     int32_t latitude;                   ///< latitude in degrees * 10,000,000
     int32_t longitude;                  ///< longitude in degrees * 10,000,000
     int32_t altitude;                   ///< altitude in cm
+
     uint32_t ground_speed;      ///< ground speed in cm/sec
     int32_t ground_course;      ///< ground course in 100ths of a degree
+
+    // velocities in cm/s if available from the GPS
+    int32_t vn_cms;
+    int32_t ve_cms;
+    int32_t vd_cms;
+
     int32_t speed_3d;                   ///< 3D speed in cm/sec (not always available)
-    int16_t hdop;                       ///< horizontal dilution of precision in cm
+    int16_t pdop;                       ///< position dilution of precision in cm
+	int16_t hdop;                       ///< place holder so we don't break other gps drivers
     uint8_t num_sats;           ///< Number of visible satelites
 
     /// Set to true when new data arrives.  A client may set this
@@ -125,10 +133,13 @@ public:
 
     // components of velocity in 2D, in m/s
     float velocity_north(void) {
-        return _status == GPS_OK ? _velocity_north : 0;
+        return _status == GPS_OK ? vn_mps : 0;
     }
     float velocity_east(void)  {
-        return _status == GPS_OK ? _velocity_east  : 0;
+        return _status == GPS_OK ? ve_mps  : 0;
+    }
+    float velocity_down(void)  {
+        return _status == GPS_OK ? vd_mps  : 0;
     }
 
     // last ground speed in m/s. This can be used when we have no GPS
@@ -196,11 +207,6 @@ protected:
 
     void _write_progstr_block(Stream *_fs, const prog_char *pstr, uint8_t size);
 
-    // velocities in cm/s if available from the GPS
-    int32_t _vel_north;
-    int32_t _vel_east;
-    int32_t _vel_down;
-
     // does this GPS support raw velocity numbers?
     bool _have_raw_velocity;
 
@@ -218,8 +224,9 @@ private:
     uint32_t _last_ground_speed_cm;
 
     // components of the velocity, in m/s
-    float _velocity_north;
-    float _velocity_east;
+    float vn_mps;
+    float ve_mps;
+	float vd_mps;
 };
 
 inline int32_t

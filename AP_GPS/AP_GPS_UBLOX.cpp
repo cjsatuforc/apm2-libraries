@@ -235,7 +235,7 @@ AP_GPS_UBLOX::_parse_gps(void)
             fix = false;
         }
         num_sats        = _buffer.solution.satellites;
-        hdop            = _buffer.solution.position_DOP;
+        pdop            = _buffer.solution.position_DOP;
 
 		// this allows us to compute the unix time upstream even though date
 		// is in a different format than for the MTK16 gps.
@@ -248,9 +248,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         ground_speed = _buffer.velned.speed_2d;                         // cm/s
         ground_course = _buffer.velned.heading_2d / 1000;       // Heading 2D deg * 100000 rescaled to deg * 100
         _have_raw_velocity = true;
-        _vel_north  = _buffer.velned.ned_north;
-        _vel_east   = _buffer.velned.ned_east;
-        _vel_down   = _buffer.velned.ned_down;
+        vn_cms = _buffer.velned.ned_north;
+        ve_cms = _buffer.velned.ned_east;
+        vd_cms = _buffer.velned.ned_down;
         _new_speed = true;
         break;
     default:

@@ -57,8 +57,9 @@ GPS::update(void)
 
             if (_have_raw_velocity) {
                 // the GPS is able to give us velocity numbers directly
-                _velocity_north = _vel_north * 0.01;
-                _velocity_east  = _vel_east * 0.01;
+                vn_mps = vn_cms * 0.01;
+                ve_mps = ve_cms * 0.01;
+				vd_mps = vd_cms * 0.01;
             } else {
                 float gps_heading = ToRad(ground_course * 0.01);
                 float gps_speed   = ground_speed * 0.01;
@@ -67,8 +68,9 @@ GPS::update(void)
                 cos_heading = cos(gps_heading);
                 sin_heading = sin(gps_heading);
 
-                _velocity_north = gps_speed * cos_heading;
-                _velocity_east  = gps_speed * sin_heading;
+                vn_mps = gps_speed * cos_heading;
+                ve_mps = gps_speed * sin_heading;
+				vd_mps = 0.0; // fix me for non-ublox gps's
             }
         }
     }
