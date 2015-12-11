@@ -237,7 +237,6 @@ uint16_t AP_InertialSensor_MPU6000::init( AP_PeriodicProcess * scheduler )
 // accumulation in ISR - must be read with interrupts disabled
 // the sum of the values since last read
 static volatile int32_t _sum[7];
-static volatile int32_t _filt[7]; // low pass filter instead of sum
 
 // how many values we've accumulated since last read
 static volatile uint16_t _count;
@@ -248,7 +247,6 @@ static volatile uint16_t _count;
 bool AP_InertialSensor_MPU6000::update( void )
 {
     int32_t sum[7];
-    int32_t filt[7];
     uint16_t count;
     float count_scale;
 
@@ -258,8 +256,8 @@ bool AP_InertialSensor_MPU6000::update( void )
     // disable interrupts for mininum time
     cli();
     for (int i=0; i<7; i++) {
-        sum[i] = _sum[i]; _sum[i] = 0;
-        filt[i] = _filt[i];
+        sum[i] = _sum[i];
+        _sum[i] = 0;
     }
     count = _count;
     _count = 0;
@@ -269,31 +267,18 @@ bool AP_InertialSensor_MPU6000::update( void )
     _delta_time_start_micros = _last_sample_time_micros;
     sei();
 
-    const bool code_path = false;
-    if ( code_path /* report average of sum */ ) {
-        // Serial.printf("averaging %d reads\n", count);
-        count_scale = 1.0 / count;
+    // Serial.printf("averaging %d reads\n", count);
+    count_scale = 1.0 / count;
 
-        _gyro.x = _gyro_scale * _gyro_data_sign[0] * sum[_gyro_data_index[0]] * count_scale;
-        _gyro.y = _gyro_scale * _gyro_data_sign[1] * sum[_gyro_data_index[1]] * count_scale;
-        _gyro.z = _gyro_scale * _gyro_data_sign[2] * sum[_gyro_data_index[2]] * count_scale;
+    _gyro.x = _gyro_scale * _gyro_data_sign[0] * sum[_gyro_data_index[0]] * count_scale;
+    _gyro.y = _gyro_scale * _gyro_data_sign[1] * sum[_gyro_data_index[1]] * count_scale;
+    _gyro.z = _gyro_scale * _gyro_data_sign[2] * sum[_gyro_data_index[2]] * count_scale;
 
-        _accel.x = _accel_scale * _accel_data_sign[0] * sum[_accel_data_index[0]] * count_scale;
-        _accel.y = _accel_scale * _accel_data_sign[1] * sum[_accel_data_index[1]] * count_scale;
-        _accel.z = _accel_scale * _accel_data_sign[2] * sum[_accel_data_index[2]] * count_scale;
+    _accel.x = _accel_scale * _accel_data_sign[0] * sum[_accel_data_index[0]] * count_scale;
+    _accel.y = _accel_scale * _accel_data_sign[1] * sum[_accel_data_index[1]] * count_scale;
+    _accel.z = _accel_scale * _accel_data_sign[2] * sum[_accel_data_index[2]] * count_scale;
 
-        _temp    = _temp_to_celsius(sum[_temp_data_index] * count_scale);
-    } else { // report low pass filtered value
-        _gyro.x = _gyro_scale * _gyro_data_sign[0] * filt[_gyro_data_index[0]];
-        _gyro.y = _gyro_scale * _gyro_data_sign[1] * filt[_gyro_data_index[1]];
-        _gyro.z = _gyro_scale * _gyro_data_sign[2] * filt[_gyro_data_index[2]];
-
-        _accel.x = _accel_scale * _accel_data_sign[0] * filt[_accel_data_index[0]];
-        _accel.y = _accel_scale * _accel_data_sign[1] * filt[_accel_data_index[1]];
-        _accel.z = _accel_scale * _accel_data_sign[2] * filt[_accel_data_index[2]];
-
-        _temp    = _temp_to_celsius(filt[_temp_data_index]);
-    }
+    _temp    = _temp_to_celsius(sum[_temp_data_index] * count_scale);
     return true;
 }
 
@@ -379,9 +364,7 @@ void AP_InertialSensor_MPU6000::read(uint32_t)
     byte addr = MPUREG_ACCEL_XOUT_H | 0x80;
     SPI.transfer(addr);
     for (uint8_t i=0; i<7; i++) {
-        int16_t value = spi_transfer_16();
-        _sum[i] += value;
-        _filt[i] = (3*_filt[i] + 1*value) / 4; // 0.8 / 0.2 low pass filter
+        _sum[i] += spi_transfer_16();
     }
     digitalWrite(_cs_pin, HIGH);
 
