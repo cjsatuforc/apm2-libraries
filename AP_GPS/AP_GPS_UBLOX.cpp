@@ -22,7 +22,7 @@
 #include "AP_GPS_UBLOX.h"
 #include <stdint.h>
 
-const prog_char AP_GPS_UBLOX::_ublox_set_binary[] PROGMEM = UBLOX_SET_BINARY;
+const char AP_GPS_UBLOX::_ublox_set_binary[] PROGMEM = UBLOX_SET_BINARY;
 const uint8_t AP_GPS_UBLOX::_ublox_set_binary_size = sizeof(AP_GPS_UBLOX::_ublox_set_binary);
 
 // Constructors ////////////////////////////////////////////////////////////////

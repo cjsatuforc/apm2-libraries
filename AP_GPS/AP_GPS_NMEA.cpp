@@ -40,7 +40,7 @@
 // for NMEA.  GPS_AUTO will try to set any SiRF unit to binary mode as part of
 // the autodetection process.
 //
-const prog_char AP_GPS_NMEA::_SiRF_init_string[] PROGMEM =
+const char AP_GPS_NMEA::_SiRF_init_string[] PROGMEM =
     "$PSRF103,0,0,1,1*25\r\n"   // GGA @ 1Hz
     "$PSRF103,1,0,0,1*25\r\n"   // GLL off
     "$PSRF103,2,0,0,1*26\r\n"   // GSA off
@@ -58,7 +58,7 @@ const prog_char AP_GPS_NMEA::_SiRF_init_string[] PROGMEM =
 // Note that we may see a MediaTek in NMEA mode if we are connected to a non-DIYDrones
 // MediaTek-based GPS.
 //
-const prog_char AP_GPS_NMEA::_MTK_init_string[] PROGMEM =
+const char AP_GPS_NMEA::_MTK_init_string[] PROGMEM =
     "$PMTK314,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n" // GGA & VTG once every fix
     "$PMTK330,0*2E\r\n"                                                                         // datum = WGS84
     "$PMTK313,1*2E\r\n"                                                                 // SBAS on
@@ -74,7 +74,7 @@ const prog_char AP_GPS_NMEA::_MTK_init_string[] PROGMEM =
 // We don't attempt to send $PUBX,41 as the unit must already be talking NMEA
 // and we don't know the baudrate.
 //
-const prog_char AP_GPS_NMEA::_ublox_init_string[] PROGMEM =
+const char AP_GPS_NMEA::_ublox_init_string[] PROGMEM =
     "$PUBX,40,gga,0,1,0,0,0,0*7B\r\n"   // GGA on at one per fix
     "$PUBX,40,vtg,0,1,0,0,0,0*7F\r\n"   // VTG on at one per fix
     "$PUBX,40,rmc,0,0,0,0,0,0*67\r\n"   // RMC off (XXX suppress other message types?)
