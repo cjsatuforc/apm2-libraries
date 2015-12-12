@@ -32,7 +32,7 @@
  *
  */
 
-#include <FastSerial.h>
+//#include <FastSerial.h>
 #include <SPI.h>
 #include "AP_Baro_MS5611.h"
 

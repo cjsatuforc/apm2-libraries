@@ -11,7 +11,8 @@
 
 #define UBLOX_DEBUGGING 0
 
-#include <FastSerial.h>
+// #include <FastSerial.h>
+#include <HardwareSerial.h>
 
 #if UBLOX_DEBUGGING
  # define Debug(fmt, args ...)  do {Serial.printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); delay(0); } while(0)
@@ -334,14 +335,14 @@ AP_GPS_UBLOX::_configure_gps(void)
 {
     struct ubx_cfg_nav_rate msg;
     const unsigned baudrates[4] = {9600U, 19200U, 38400U, 57600U};
-    FastSerial *_fs = (FastSerial *)_port;
+    HardwareSerial *_fs = (HardwareSerial *)_port;
 
     // the GPS may be setup for a different baud rate. This ensures
     // it gets configured correctly
     for (uint8_t i=0; i<4; i++) {
         _fs->begin(baudrates[i]);
         _write_progstr_block(_fs, _ublox_set_binary, _ublox_set_binary_size);
-        while (_fs->tx_pending()) delay(1);
+        _fs->flush();
     }
     _fs->begin(38400U);
 

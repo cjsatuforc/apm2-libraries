@@ -1,6 +1,11 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-#include <FastSerial.h>
+#include <Arduino.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <HardwareSerial.h>
+
+//#include <FastSerial.h>
 #include "AP_AnalogSource_Arduino.h"
 
 // increase this if we need more than 5 analog sources
@@ -137,7 +142,7 @@ void AP_AnalogSource_Arduino::assign_pin_index(uint8_t pin)
     // ensure we don't try to read from too many analog pins
     if (num_pins_watched == MAX_PIN_SOURCES) {
         while (true) {
-            Serial.printf_P(PSTR("MAX_PIN_SOURCES REACHED\n"));
+            Serial.println("MAX_PIN_SOURCES REACHED");
             delay(1000);
         }
     }

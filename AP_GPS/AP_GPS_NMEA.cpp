@@ -25,7 +25,7 @@
 /// TinyGPS parser by Mikal Hart.
 ///
 
-#include <FastSerial.h>
+//#include <FastSerial.h>
 #include <AP_Common.h>
 
 #include <avr/pgmspace.h>
@@ -99,16 +99,16 @@ AP_GPS_NMEA::AP_GPS_NMEA(Stream *s) :
 // Public Methods //////////////////////////////////////////////////////////////
 void AP_GPS_NMEA::init(enum GPS_Engine_Setting nav_setting)
 {
-    BetterStream        *bs = (BetterStream *)_port;
+    HardwareSerial        *bs = (HardwareSerial *)_port;
 
     // send the SiRF init strings
-    bs->print_P((const prog_char_t *)_SiRF_init_string);
+    bs->print(_SiRF_init_string);
 
     // send the MediaTek init strings
-    bs->print_P((const prog_char_t *)_MTK_init_string);
+    bs->print(_MTK_init_string);
 
     // send the ublox init strings
-    bs->print_P((const prog_char_t *)_ublox_init_string);
+    bs->print(_ublox_init_string);
 
     idleTimeout = 1200;
 }

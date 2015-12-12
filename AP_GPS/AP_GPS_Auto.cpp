@@ -3,7 +3,7 @@
 /// @file	AP_GPS_Auto.cpp
 /// @brief	Simple GPS auto-detection logic.
 
-#include <FastSerial.h>
+//#include <FastSerial.h>
 #include <AP_Common.h>
 
 #include "AP_GPS.h"             // includes AP_GPS_Auto.h
@@ -23,7 +23,7 @@ const char AP_GPS_Auto::_mtk_set_binary[]  = MTK_SET_BINARY;
 const char AP_GPS_Auto::_sirf_set_binary[] = SIRF_SET_BINARY;
 
 
-AP_GPS_Auto::AP_GPS_Auto(FastSerial *s, GPS **gps)  :
+AP_GPS_Auto::AP_GPS_Auto(HardwareSerial *s, GPS **gps)  :
     GPS(s),
     _fs(s),
     _gps(gps)
@@ -60,14 +60,14 @@ AP_GPS_Auto::read(void)
 
     // Loop through possible baudrates trying to detect a GPS at one of them.
     //
-    // Note that we need to have a FastSerial rather than a Stream here because
-    // Stream has no idea of line speeds.  FastSerial is quite OK with us calling
+    // Note that we need to have a HardwareSerial rather than a Stream here because
+    // Stream has no idea of line speeds.  HardwareSerial is quite OK with us calling
     // ::begin any number of times.
     //
     for (i = 0; i < (sizeof(baudrates) / sizeof(baudrates[0])); i++) {
 
         // ensure the serial port has a large enough buffer for any protocol
-        _fs->begin(baudrates[i], 256, 16);
+        _fs->begin(baudrates[i]);
         if (NULL != (gps = _detect())) {
 
             // configure the detected GPS and give it a chance to listen to its device
@@ -78,14 +78,14 @@ AP_GPS_Auto::read(void)
                 gps->new_data = false;
                 gps->update();
                 if (gps->new_data) {
-                    Serial.println_P(PSTR("OK"));
+                    Serial.println("OK");
                     *_gps = gps;
                     return true;
                 }
             }
             // GPS driver failed to parse any data from GPS,
             // delete the driver and continue the process.
-            Serial.println_P(PSTR("failed, retrying"));
+            Serial.println("failed, retrying");
             delete gps;
         }
     }
@@ -136,9 +136,7 @@ AP_GPS_Auto::_detect(void)
             _write_progstr_block(_fs, _sirf_set_binary, sizeof(_sirf_set_binary));
 
             // ensure its all been written
-            while (_fs->tx_pending()) {
-                callback(10);
-            }
+            _fs->flush();
 
             // give the GPS time to react to the settings
             callback(100);
@@ -173,13 +171,13 @@ AP_GPS_Auto::_detect(void)
             // message 5 is MTK pretending to talk UBX
             if (0x05 == fingerprint[3]) {
                 gps = new AP_GPS_MTK(_port);
-                Serial.print_P(PSTR(" MTK1.4 "));
+                Serial.print(" MTK1.4 ");
                 break;
             }
 
             // any other message is ublox
             gps = new AP_GPS_UBLOX(_port);
-            Serial.print_P(PSTR(" ublox "));
+            Serial.print(" ublox ");
             break;
         }
 
@@ -190,7 +188,7 @@ AP_GPS_Auto::_detect(void)
             0x01 == fingerprint[3]) {
             // new style Ublox
             gps = new AP_GPS_UBLOX(_port);
-            Serial.print_P(PSTR(" ublox "));
+            Serial.print(" ublox ");
             break;
         }
 
@@ -201,7 +199,7 @@ AP_GPS_Auto::_detect(void)
             (0xdd == fingerprint[1]) &&
             (0x20 == fingerprint[2])) {
             gps = new AP_GPS_MTK16(_port);
-            Serial.print_P(PSTR(" MTK1.6 "));
+            Serial.print(" MTK1.6 ");
             break;
         }
 
@@ -211,7 +209,7 @@ AP_GPS_Auto::_detect(void)
         if ((0xa0 == fingerprint[0]) &&
             (0xa2 == fingerprint[1])) {
             gps = new AP_GPS_SIRF(_port);
-            Serial.print_P(PSTR(" SiRF "));
+            Serial.print(" SiRF ");
             break;
         }
 
@@ -228,7 +226,7 @@ AP_GPS_Auto::_detect(void)
             break;
         }
 #endif
-        Serial.printf("?");
+        Serial.print("?");
     }
     return(gps);
 }

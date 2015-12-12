@@ -4,7 +4,7 @@
 // Simple commandline menu system.
 //
 
-#include <FastSerial.h>
+// #include <FastSerial.h>
 #include <AP_Common.h>
 
 #include <ctype.h>
@@ -45,7 +45,8 @@ Menu::run(void)
 
         // loop reading characters from the input
         len = 0;
-        Serial.printf("%S] ", FPSTR(_prompt));
+        Serial.print(_prompt);
+        Serial.print("] ");
         for (;; ) {
             c = Serial.read();
             if (-1 == c)
@@ -141,7 +142,8 @@ Menu::_help(void)
 
     Serial.println("Commands:");
     for (i = 0; i < _entries; i++)
-        Serial.printf("  %S\n", FPSTR(_commands[i].command));
+        Serial.print("  ");
+        Serial.println(_commands[i].command);
 }
 
 // run the n'th command in the menu

@@ -14,7 +14,7 @@
 /// @brief	IMU driver on top of an INS driver. Provides calibration for the
 //          inertial sensors (gyro and accel)
 
-#include <FastSerial.h>
+//#include <FastSerial.h>
 #include <AP_Common.h>
 
 #include <avr/eeprom.h>
@@ -70,7 +70,7 @@ AP_IMU_INS::_init_gyro(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(
 
     // cold start
     delay_cb(100);
-    Serial.printf_P(PSTR("Init Gyro"));
+    Serial.print("Init Gyro");
 
     for(int c = 0; c < 25; c++) {
         // Mostly we are just flashing the LED's here
@@ -98,7 +98,7 @@ AP_IMU_INS::_init_gyro(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(
         float diff_norm;
         uint8_t i;
 
-        Serial.printf_P(PSTR("*"));
+        Serial.print("*");
 
         gyro_sum.zero();
         for (i=0; i<200; i++) {
@@ -137,7 +137,9 @@ AP_IMU_INS::_init_gyro(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)(
 
     // we've kept the user waiting long enough - use the best pair we
     // found so far
-    Serial.printf_P(PSTR("\ngyro did not converge: diff=%f dps\n"), ToDeg(best_diff));
+    Serial.print("\ngyro did not converge: diff=");
+    Serial.print(ToDeg(best_diff));
+    Serial.println(" dps");
 
     _sensor_cal[0] = best_avg.x;
     _sensor_cal[1] = best_avg.y;
@@ -171,7 +173,7 @@ AP_IMU_INS::_init_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)
     // cold start
     delay_cb(500);
 
-    Serial.printf_P(PSTR("Init Accel"));
+    Serial.print("Init Accel");
 
     for (int j=3; j<=5; j++) _sensor_cal[j] = 500;              // Just a large value to load prev[j] the first time
 
@@ -197,7 +199,7 @@ AP_IMU_INS::_init_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)
             }
 
             if(flashcount == 5) {
-                Serial.printf_P(PSTR("*"));
+                Serial.print("*");
                 FLASH_LEDS(true);
             }
 
@@ -218,7 +220,7 @@ AP_IMU_INS::_init_accel(void (*delay_cb)(unsigned long t), void (*flash_leds_cb)
         delay_cb(500);
     } while (  total_change > _accel_total_cal_change || max_offset > _accel_max_cal_offset);
 
-    Serial.printf_P(PSTR(" "));
+    Serial.print(" ");
 }
 
 float

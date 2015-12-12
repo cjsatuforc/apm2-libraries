@@ -10,7 +10,7 @@
 /// @brief	A class to implement a derivative (slope) filter
 /// See http://www.holoborodko.com/pavel/numerical-methods/numerical-derivative/smooth-low-noise-differentiators/
 
-#include <FastSerial.h>
+//#include <FastSerial.h>
 #include <inttypes.h>
 #include <Filter.h>
 #include <DerivativeFilter.h>
