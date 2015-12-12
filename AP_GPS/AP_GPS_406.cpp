@@ -9,7 +9,7 @@
 //  License as published by the Free Software Foundation; either
 //  version 2.1 of the License, or (at your option) any later version.
 
-#include "../FastSerial/FastSerial.h"   // because we need to change baud rates... ugh.
+//#include "../FastSerial/FastSerial.h"   // because we need to change baud rates... ugh.
 #include "AP_GPS_406.h"
 #if defined(ARDUINO) && ARDUINO >= 100
  #include "Arduino.h"
@@ -67,7 +67,7 @@ AP_GPS_406::_configure_gps(void)
 void
 AP_GPS_406::_change_to_sirf_protocol(void)
 {
-    FastSerial  *fs = (FastSerial *)_port;      // this is a bit grody...
+    HardwareSerial  *fs = (HardwareSerial *)_port;      // this is a bit grody...
 
     fs->begin(4800);
     delay(300);
