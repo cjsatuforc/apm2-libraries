@@ -3,13 +3,11 @@
  *       Code by Jordi MuÒoz and Jose Julio. DIYDrones.com
  */
 
-#include <FastSerial.h>
+//#include <FastSerial.h>
 #include <AP_Common.h>
 #include <AP_Compass.h> // Compass Library
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <I2C.h>
-
-FastSerialPort0(Serial);
 
 #define ToRad(x) (x*0.01745329252)  // *pi/180
 #define ToDeg(x) (x*57.2957795131)  // *180/pi
@@ -99,17 +97,23 @@ void loop()
         offset[2] = -(max[2]+min[2])/2;
 
         // display all to user
-        Serial.printf("Heading: %.2f (%3u,%3u,%3u) ",
-                      ToDeg(heading),
-                      compass.mag_x,
-                      compass.mag_y,
-                      compass.mag_z);
+        Serial.print("Heading: ");
+        Serial.print(ToDeg(heading), 1);
+        Serial.print(" (");
+        Serial.print(compass.mag_x, 3);
+        Serial.print(" ");
+        Serial.print(compass.mag_y, 3);
+        Serial.print(" ");
+        Serial.print(compass.mag_z, 3);
+        Serial.println(")");
 
         // display offsets
-        Serial.printf("\t offsets(%.2f, %.2f, %.2f)",
-                      offset[0], offset[1], offset[2]);
+        Serial.print("\toffsets(");
+        Serial.print(offset[0], 2); Serial.print(", ");
+        Serial.print(offset[1], 2); Serial.print(", ");
+        Serial.print(offset[2], 2); Serial.println(")");
 
-        Serial.printf(" t=%u", (unsigned)read_time);
+        //Serial.printf(" t=%u", (unsigned)read_time);
 
         Serial.println();
     }
