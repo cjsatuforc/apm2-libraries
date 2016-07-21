@@ -69,6 +69,12 @@ private:
 
     float                       _temp_to_celsius( uint16_t );
 
+    static const float          _pi;
+    static const float          _d2r;
+    static const float          _gyro_lsb_per_dps;
+    static const float          _accel_lsb_per_dps;
+    static const float          _g;
+
     static const float          _accel_scale;
     static const float          _gyro_scale;
 

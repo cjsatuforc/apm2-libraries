@@ -168,9 +168,12 @@ uint8_t AP_InertialSensor_MPU6000::_cs_pin;
  *  RS-MPU-6000A-00.pdf, page 33, section 4.25 lists LSB sensitivity of
  *  gyro as 16.4 LSB/DPS at scale factor of +/- 2000dps (FS_SEL==3)
  */
-// CLO: modified to run at +/- 500dps (FS_SEL==1) resulting in 65.6 LSB/DPS
+// CLO: modified to run at +/- 500dps (FS_SEL==1) resulting in 65.535 LSB/DPS
 // const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532 / 16.4);
-const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532 / 65.5);
+const float AP_InertialSensor_MPU6000::_pi = 3.14159265358979323846;
+const float AP_InertialSensor_MPU6000::_d2r = _pi / 180.0;
+const float AP_InertialSensor_MPU6000::_gyro_lsb_per_dps = 65536 / 1000;
+const float AP_InertialSensor_MPU6000::_gyro_scale = _d2r / _gyro_lsb_per_dps;
 
 /*
  *  RS-MPU-6000A-00.pdf, page 31, section 4.23 lists LSB sensitivity of
@@ -181,7 +184,9 @@ const float AP_InertialSensor_MPU6000::_gyro_scale = (0.0174532 / 65.5);
  */
 // CLO: modified to run at +/- 4g (8192 lSB/g)
 // const float AP_InertialSensor_MPU6000::_accel_scale = 9.81 / 4096.0;
-const float AP_InertialSensor_MPU6000::_accel_scale = 9.81 / 8192.0;
+const float AP_InertialSensor_MPU6000::_g = 9.81;
+const float AP_InertialSensor_MPU6000::_accel_lsb_per_dps = 65536 / 8;
+const float AP_InertialSensor_MPU6000::_accel_scale = _g / _accel_lsb_per_dps;
 
 /* pch: I believe the accel and gyro indicies are correct
  *      but somone else should please confirm.
